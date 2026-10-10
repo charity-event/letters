@@ -1,8 +1,8 @@
-# 反诈二维码演练页（GitHub Pages + 不蒜子 版）
+# 反诈二维码演练页（GitHub Pages + Vercount 版）
 
-纯静态方案：页面托管在 GitHub Pages，计数用不蒜子的免费统计脚本。没有后端，没有服务器，没有账号费用。
+纯静态方案：页面托管在 GitHub Pages，计数用 Vercount 的免费统计脚本（兼容不蒜子，走 POST 不依赖 Referer）。没有后端，没有服务器，没有账号费用。
 
-与 EdgeOne Pages 版（`../fanzha_qrcode`）相比，这一版的代价是：计数在第三方服务器上，不能归零、不能修改；不蒜子是个人维护的免费服务，偶尔 502。
+与 EdgeOne Pages 版（`../fanzha_qrcode`）相比，这一版的代价是：计数在第三方服务器上，页面这边不能归零、不能修改；Vercount 是个人维护的免费服务，不保证永远可用。
 
 ## 目录结构
 
@@ -55,25 +55,24 @@ https://<你的用户名>.github.io/open-course/course/register/
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install "qrcode[pil]"
-.venv/bin/python tools/make_qr.py https://<你的用户名>.github.io/open-course/course/register/ -o output/qr.png
+.venv/bin/python tools/make_qr.py https://charity-event.github.io/letters/course/register/ -o output/qr.png
 ```
 
 ### 4. 正式发布前
 
 - 用真机扫一次确认能打开、能出数字。
-- 把你测试产生的访问次数填进 `course/register/index.html` 里的 `COUNT_OFFSET`，显示时会减掉。改完重新 push，等一分钟生效。
-- 页脚的"制作方：XXXX"改成你的课程或单位名称。
+- 把你测试产生的访问次数填进 `course/register/index.html` 里的 `COUNT_OFFSET`，显示时会减掉。注意 Vercount 第一次被访问时会自动把这个域名在不蒜子上的历史数据同步过来，之前用不蒜子测试产生的次数也会算在内，一并填进去。改完重新 push，等一分钟生效。
 
 ## 必须知道的几个限制
 
-**计数按域名算，不按页面算。** 不蒜子统计 `site_pv` 时，把 `<你的用户名>.github.io` 下的所有页面算在一起。如果你的 GitHub 账号已经用 Pages 放过别的东西（博客、作业等），数字会混在一起。最干净的做法是**新注册一个 GitHub 账号专门放这个项目**。
+**计数按域名算，不按页面算。** 默认用的 `site_pv` 把 `<你的用户名>.github.io` 下的所有页面算在一起。如果你的 GitHub 账号已经用 Pages 放过别的东西（博客、作业等），数字会混在一起。最干净的做法是**新注册一个 GitHub 账号专门放这个项目**；或者把 `COUNTER_FIELD` 改成 `'page_pv'`，只统计落地页本身。
 
-**为什么不用按页面统计的 page_pv。** 不蒜子靠 Referer 头识别页面，iPhone 上的 Safari 和微信内置浏览器出于隐私只会发送域名，不发完整路径，于是 iPhone 用户全部被记到站点根目录下，数字就乱了。`site_pv` 不依赖这个，所以更稳。
+**page_pv 现在也能用。** 之前不蒜子靠 Referer 头识别页面，iPhone 的 Safari 和微信内置浏览器只发域名不发路径，page_pv 会失真。Vercount 通过 POST 把完整页面地址发给服务器，不依赖 Referer，所以 page_pv 在 iPhone 和微信里也准确。默认仍用 `site_pv`，两者都可以。
 
-**不能归零。** 数据在不蒜子服务器上，没有后台可以改。想从 1 开始只能换一个全新的域名（也就是新 GitHub 账号），或者用 `COUNT_OFFSET` 把已有数字减掉。
+**不能归零。** 数据在 Vercount 服务器上，页面这边改不了。想从 1 开始只能换一个全新的域名（也就是新 GitHub 账号），或者用 `COUNT_OFFSET` 把已有数字减掉。
 
 **同一个人刷新不会重复计数。** 编号第一次拿到后存在手机 localStorage 里，之后打开直接显示，不再加载计数脚本。清了浏览器数据或换设备就算新的一个人。
 
-**不蒜子不稳定时怎么办。** 页面已经做了自动重试：单次等 4 秒，最多试 3 次，之后才显示横杠。实测不蒜子接口会间歇性 502，重试能挡掉大部分。如果还是经常失败，把 `course/register/index.html` 里的 `COUNTER` 从 `'busuanzi'` 改成 `'vercount'`。Vercount 是兼容不蒜子的免费替代，不靠 Referer，稳定得多，页面其他地方不用改。
+**计数服务不可用时。** 页面最多等 12 秒（`TIMEOUT_MS`），拿不到数字就显示横杠和一句"计数服务暂时不可用，但你确实扫了码"。
 
 **国内访问。** `github.io` 在国内时通时不通，手机流量下一般能开，但可能要等几秒。微信打开境外域名会弹"非微信官方网页"提示，点继续即可。如果试下来打不开的比例高，就换回 EdgeOne Pages 版。
